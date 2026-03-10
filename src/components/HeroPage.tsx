@@ -144,6 +144,9 @@ export default function HeroPage({ onFindFood, onDonateFood }: HeroPageProps) {
                 </button>
               </div>
 
+            
+            </div>
+
             {/* Right Side - Stats Cards */}
             <div className="grid grid-cols-2 gap-4 lg:gap-5">
               {statCards.map((stat, i) => (
