@@ -3,8 +3,8 @@
 -- MySQL Database: plateshare_db
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS plateshare_db;
-USE plateshare_db;
+CREATE DATABASE IF NOT EXISTS railway;
+USE railway;
 
 -- ============================================
 -- Users Table
