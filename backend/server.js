@@ -580,6 +580,3 @@ app.listen(PORT, () => {
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}\n`);
 });
 
-app.get("/", (req, res) => {
-  res.send("🍽️ PlateShare API is running");
-});

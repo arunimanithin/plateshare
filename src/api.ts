@@ -389,64 +389,26 @@ export async function apiGetPendingUsers(): Promise<User[]> {
   return lsGetUsers().filter(u => !u.is_approved);
 }
 
-// ---- CLAIMS FUNCTIONS ----
-
 export async function apiClaimFood(foodId: number, recipientId: number): Promise<Claim | null> {
-  if (await checkBackend()) {
-    try {
-      const res = await apiFetch('/claims', { method: 'POST', body: JSON.stringify({ food_id: foodId, recipient_id: recipientId }) });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch { /* fallback */ }
-  }
-  const foods = lsGetFoods();
-  const idx = foods.findIndex(f => f.food_id === foodId);
-  if (idx === -1 || foods[idx].status !== 'available') return null;
-  foods[idx].status = 'requested';
-  lsSetFoods(foods);
-  const claims = lsGetClaims();
-  const newClaim: Claim = { claim_id: lsNextClaimId(), food_id: foodId, recipient_id: recipientId, status: 'reserved', claimed_at: new Date().toISOString() };
-  claims.push(newClaim);
-  lsSetClaims(claims);
-  return newClaim;
+  const res = await apiFetch('/claims', {
+    method: 'POST',
+    body: JSON.stringify({ food_id: foodId, recipient_id: recipientId })
+  });
+
+  if (!res.ok) return null;
+  return await res.json();
 }
 
 export async function apiGetUserClaims(recipientId: number): Promise<(Claim & { food?: FoodListing; donor_name?: string })[]> {
-  if (await checkBackend()) {
-    try {
-      const res = await apiFetch(`/users/${recipientId}/claims`);
-      return await res.json();
-    } catch { /* fallback */ }
-  }
-  const claims = lsGetClaims();
-  const foods = lsGetFoods();
-  const users = lsGetUsers();
-  return claims
-    .filter(c => c.recipient_id === recipientId)
-    .map(c => {
-      const food = foods.find(f => f.food_id === c.food_id);
-      const donor = food ? users.find(u => u.user_id === food.donor_id) : undefined;
-      return { ...c, food: food || undefined, donor_name: donor ? donor.org_name || donor.full_name : 'Unknown' };
-    })
-    .sort((a, b) => new Date(b.claimed_at).getTime() - new Date(a.claimed_at).getTime());
+  const res = await apiFetch(`/users/${recipientId}/claims`);
+  return await res.json();
 }
 
 export async function apiMarkClaimCollected(claimId: number): Promise<Claim | null> {
-  if (await checkBackend()) {
-    try {
-      const res = await apiFetch(`/claims/${claimId}/collect`, { method: 'PUT' });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch { /* fallback */ }
-  }
-  const claims = lsGetClaims();
-  const idx = claims.findIndex(c => c.claim_id === claimId);
-  if (idx === -1) return null;
-  if (claims[idx].status === 'collected') return claims[idx];
-  claims[idx].status = 'collected';
-  lsSetClaims(claims);
-  const foods = lsGetFoods();
-  const fIdx = foods.findIndex(f => f.food_id === claims[idx].food_id);
-  if (fIdx !== -1) { foods[fIdx].status = 'completed'; lsSetFoods(foods); }
-  return claims[idx];
+  const res = await apiFetch(`/claims/${claimId}/collect`, {
+    method: 'PUT'
+  });
+
+  if (!res.ok) return null;
+  return await res.json();
 }
