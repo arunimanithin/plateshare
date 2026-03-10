@@ -144,24 +144,6 @@ export default function HeroPage({ onFindFood, onDonateFood }: HeroPageProps) {
                 </button>
               </div>
 
-              {/* Demo credentials */}
-              <div className="mt-8 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/15">
-                <p className="text-sm font-semibold text-primary-200 mb-2">🔑 Demo Credentials</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-primary-200">
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <span className="text-amber-300 font-semibold">Admin:</span><br/>admin@demo.com
-                  </div>
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <span className="text-emerald-300 font-semibold">Donor:</span><br/>donor@demo.com
-                  </div>
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <span className="text-blue-300 font-semibold">NGO:</span><br/>ngo@demo.com
-                  </div>
-                </div>
-                <p className="text-[11px] text-primary-300 mt-2">Password for all: <code className="bg-white/10 px-1.5 py-0.5 rounded">password123</code></p>
-              </div>
-            </div>
-
             {/* Right Side - Stats Cards */}
             <div className="grid grid-cols-2 gap-4 lg:gap-5">
               {statCards.map((stat, i) => (
