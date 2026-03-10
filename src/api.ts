@@ -1,280 +1,257 @@
 import { User, FoodListing, Donation, Claim } from './types';
 
-const API_BASE = 'https://plateshare-vi1f.onrender.com';
+// ============================================
+// PlateShare API Layer
+// All calls go to the deployed backend on Render
+// No localStorage fallback
+// ============================================
 
-let backendAvailable: boolean | null = null;
-
-async function checkBackend(): Promise<boolean> {
-  if (backendAvailable !== null) return backendAvailable;
-  try {
-    const res = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(2000) });
-    backendAvailable = res.ok;
-  } catch {
-    backendAvailable = false;
-  }
-  setTimeout(() => { backendAvailable = null; }, 30000);
-  return backendAvailable;
-}
+const API_BASE = 'https://plateshare-vi1f.onrender.com/api';
 
 async function apiFetch(url: string, options?: RequestInit) {
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  return res;
+}
+
+// No-op — no localStorage to initialize
+export function initializeDB(): void {}
+
+// ============================================
+// AUTH
+// ============================================
+
+// POST /api/login
+export async function apiLogin(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}${url}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    });
-    return res;
+    const res = await apiFetch('/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Login failed' };
+    return { success: true, user: data.user };
   } catch (err) {
-    backendAvailable = false;
-    throw err;
+    return { success: false, error: 'Server unavailable. Please try again later.' };
   }
 }
 
-// ==============================
-// API FUNCTIONS
-// ==============================
-
-export async function apiLogin(
-  email: string,
-  password: string
-): Promise<{ success: boolean; user?: User; error?: string }> {
-
-  const res = await apiFetch('/api/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    return { success: false, error: data.error || 'Login failed' };
-  }
-
-  return { success: true, user: data.user };
-}
-
+// POST /api/users
 export async function apiCreateUser(data: {
-  full_name: string
-  email: string
-  password: string
-  phone?: string
-  role: 'donor' | 'recipient'
-  org_name: string
-  city?: string
+  full_name: string; email: string; password: string; phone?: string;
+  role: 'donor' | 'recipient'; org_name: string; city?: string;
 }): Promise<{ success: boolean; user?: User; error?: string }> {
-
-  const res = await apiFetch('/api/users', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    return { success: false, error: result.error || 'Registration failed' };
+  try {
+    const res = await apiFetch('/users', { method: 'POST', body: JSON.stringify(data) });
+    const result = await res.json();
+    if (!res.ok) return { success: false, error: result.error || 'Registration failed' };
+    return { success: true, user: result.user };
+  } catch (err) {
+    return { success: false, error: 'Server unavailable. Please try again later.' };
   }
-
-  return { success: true, user: result.user };
 }
 
-export async function apiGetFoods(filters?: {
-  city?: string
-  food_type?: string
-  search?: string
-}): Promise<FoodListing[]> {
+// ============================================
+// FOOD LISTINGS
+// ============================================
 
-  const params = new URLSearchParams();
-
-  if (filters?.city && filters.city !== 'all') params.set('city', filters.city);
-  if (filters?.food_type && filters.food_type !== 'all') params.set('food_type', filters.food_type);
-  if (filters?.search) params.set('search', filters.search);
-
-  const res = await apiFetch(`/api/foods?${params.toString()}`);
-
-  return res.json();
+// GET /api/foods
+export async function apiGetFoods(filters?: { city?: string; food_type?: string; search?: string }): Promise<FoodListing[]> {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.city && filters.city !== 'all') params.set('city', filters.city);
+    if (filters?.food_type && filters.food_type !== 'all') params.set('food_type', filters.food_type);
+    if (filters?.search) params.set('search', filters.search);
+    const res = await apiFetch(`/foods?${params.toString()}`);
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
+// POST /api/foods
 export async function apiCreateFood(data: {
-  title: string
-  description: string
-  quantity: string
-  food_type: string
-  pickup_address: string
-  city: string
-  expiry_time: string
-  donor_id: number
+  title: string; description: string; quantity: string; food_type: string;
+  pickup_address: string; city: string; expiry_time: string; donor_id: number;
 }): Promise<FoodListing> {
-
-  const res = await apiFetch('/api/foods', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  });
-
-  return res.json();
+  const res = await apiFetch('/foods', { method: 'POST', body: JSON.stringify(data) });
+  return await res.json();
 }
 
-export async function apiUpdateFood(
-  id: number,
-  data: Partial<FoodListing>
-): Promise<FoodListing | null> {
-
-  const res = await apiFetch(`/api/foods/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data)
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
+// PUT /api/foods/:id
+export async function apiUpdateFood(id: number, data: Partial<FoodListing>): Promise<FoodListing | null> {
+  try {
+    const res = await apiFetch(`/foods/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
+// DELETE /api/foods/:id
 export async function apiDeleteFood(id: number): Promise<boolean> {
-
-  const res = await apiFetch(`/api/foods/${id}`, {
-    method: 'DELETE'
-  });
-
-  return res.ok;
+  try {
+    const res = await apiFetch(`/foods/${id}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
+// GET /api/users/:id/listings
 export async function apiGetUserListings(userId: number): Promise<FoodListing[]> {
+  try {
+    const res = await apiFetch(`/users/${userId}/listings`);
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
 
-  const res = await apiFetch(`/api/users/${userId}/listings`);
+// ============================================
+// DONOR NAME HELPERS
+// ============================================
 
-  return res.json();
+export function getDonorNameSync(_donorId: number): string {
+  return 'Loading...';
 }
 
 export async function getDonorName(donorId: number): Promise<string> {
-
-  const res = await apiFetch('/api/admin/users');
-
-  const users = await res.json();
-
-  const user = users.find((u: User) => u.user_id === donorId);
-
-  return user ? user.org_name || user.full_name : 'Unknown';
+  try {
+    const res = await apiFetch('/admin/users');
+    const users = await res.json();
+    const user = users.find((u: User) => u.user_id === donorId);
+    return user ? user.org_name || user.full_name : 'Unknown';
+  } catch {
+    return 'Unknown';
+  }
 }
 
-export async function getStats(): Promise<{
-  meals: number
-  donors: number
-  ngos: number
-  wasted: string
-}> {
+// ============================================
+// PUBLIC STATS
+// ============================================
 
-  const res = await apiFetch('/api/stats');
-
-  return res.json();
+export async function getStats(): Promise<{ meals: number; donors: number; ngos: number; wasted: string }> {
+  try {
+    const res = await apiFetch('/stats');
+    return await res.json();
+  } catch {
+    return { meals: 0, donors: 0, ngos: 0, wasted: '2.1M tons' };
+  }
 }
 
 export async function getCities(): Promise<string[]> {
-
-  const res = await apiFetch('/api/cities');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/foods/filters');
+    const data = await res.json();
+    return data.cities || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getFoodTypes(): Promise<string[]> {
-
-  const res = await apiFetch('/api/food-types');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/foods/filters');
+    const data = await res.json();
+    return data.foodTypes || [];
+  } catch {
+    return [];
+  }
 }
 
-// ==============================
-// ADMIN
-// ==============================
+// ============================================
+// ADMIN FUNCTIONS
+// ============================================
 
 export async function apiGetAllUsers(): Promise<User[]> {
-
-  const res = await apiFetch('/api/admin/users');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/admin/users');
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function apiToggleUserActive(userId: number): Promise<User | null> {
-
-  const res = await apiFetch(`/api/admin/users/${userId}/toggle-active`, {
-    method: 'PUT'
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
+  try {
+    const res = await apiFetch(`/admin/users/${userId}/toggle-active`, { method: 'PUT' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 export async function apiApproveUser(userId: number): Promise<User | null> {
-
-  const res = await apiFetch(`/api/admin/users/${userId}/approve`, {
-    method: 'PUT'
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
+  try {
+    const res = await apiFetch(`/admin/users/${userId}/approve`, { method: 'PUT' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 export async function getAdminStats(): Promise<{
-  totalDonors: number
-  ngoPartners: number
-  pendingApprovals: number
-  activeListings: number
-  currentlyClaimed: number
-  mealsRescued: number
+  totalDonors: number; ngoPartners: number; pendingApprovals: number;
+  activeListings: number; currentlyClaimed: number; mealsRescued: number;
 }> {
-
-  const res = await apiFetch('/api/admin/stats');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/admin/stats');
+    return await res.json();
+  } catch {
+    return { totalDonors: 0, ngoPartners: 0, pendingApprovals: 0, activeListings: 0, currentlyClaimed: 0, mealsRescued: 0 };
+  }
 }
 
 export async function apiGetDonations(): Promise<Donation[]> {
-
-  const res = await apiFetch('/api/admin/donations');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/admin/donations');
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function apiGetPendingUsers(): Promise<User[]> {
-
-  const res = await apiFetch('/api/admin/pending');
-
-  return res.json();
+  try {
+    const res = await apiFetch('/admin/pending');
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
-export async function apiClaimFood(
-  foodId: number,
-  recipientId: number
-): Promise<Claim | null> {
+// ============================================
+// CLAIMS FUNCTIONS
+// ============================================
 
-  const res = await apiFetch('/api/claims', {
-    method: 'POST',
-    body: JSON.stringify({
-      food_id: foodId,
-      recipient_id: recipientId
-    })
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
+export async function apiClaimFood(foodId: number, recipientId: number): Promise<Claim | null> {
+  try {
+    const res = await apiFetch('/claims', { method: 'POST', body: JSON.stringify({ food_id: foodId, recipient_id: recipientId }) });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
-export async function apiGetUserClaims(
-  recipientId: number
-): Promise<(Claim & { food?: FoodListing; donor_name?: string })[]> {
-
-  const res = await apiFetch(`/api/users/${recipientId}/claims`);
-
-  return res.json();
+export async function apiGetUserClaims(recipientId: number): Promise<(Claim & { food?: FoodListing; donor_name?: string })[]> {
+  try {
+    const res = await apiFetch(`/users/${recipientId}/claims`);
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function apiMarkClaimCollected(claimId: number): Promise<Claim | null> {
-
-  const res = await apiFetch(`/api/claims/${claimId}/collect`, {
-    method: 'PUT'
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
+  try {
+    const res = await apiFetch(`/claims/${claimId}/collect`, { method: 'PUT' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
