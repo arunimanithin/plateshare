@@ -106,7 +106,7 @@ function lsNextClaimId(): number { const id = parseInt(localStorage.getItem(NEXT
 export async function apiLogin(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      const res = await apiFetch('/api/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) return { success: false, error: data.error || 'Login failed' };
       return { success: true, user: data.user };
@@ -128,7 +128,7 @@ export async function apiCreateUser(data: {
 }): Promise<{ success: boolean; user?: User; error?: string }> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/users', { method: 'POST', body: JSON.stringify(data) });
+      const res = await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(data) });
       const result = await res.json();
       if (!res.ok) return { success: false, error: result.error || 'Registration failed' };
       return { success: true, user: result.user };
@@ -155,7 +155,7 @@ export async function apiGetFoods(filters?: { city?: string; food_type?: string;
       if (filters?.city && filters.city !== 'all') params.set('city', filters.city);
       if (filters?.food_type && filters.food_type !== 'all') params.set('food_type', filters.food_type);
       if (filters?.search) params.set('search', filters.search);
-      const res = await apiFetch(`/foods?${params.toString()}`);
+      const res = await apiFetch(`/api/foods?${params.toString()}`);
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -175,7 +175,7 @@ export async function apiCreateFood(data: {
 }): Promise<FoodListing> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/foods', { method: 'POST', body: JSON.stringify(data) });
+      const res = await apiFetch('/api/foods', { method: 'POST', body: JSON.stringify(data) });
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -190,7 +190,7 @@ export async function apiCreateFood(data: {
 export async function apiUpdateFood(id: number, data: Partial<FoodListing>): Promise<FoodListing | null> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/foods/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      const res = await apiFetch(`/api/foods/${id}`, { method: 'PUT', body: JSON.stringify(data) });
       if (!res.ok) return null;
       return await res.json();
     } catch { /* fallback */ }
@@ -207,7 +207,7 @@ export async function apiUpdateFood(id: number, data: Partial<FoodListing>): Pro
 export async function apiDeleteFood(id: number): Promise<boolean> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/foods/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/foods/${id}`, { method: 'DELETE' });
       return res.ok;
     } catch { /* fallback */ }
   }
@@ -222,7 +222,7 @@ export async function apiDeleteFood(id: number): Promise<boolean> {
 export async function apiGetUserListings(userId: number): Promise<FoodListing[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/users/${userId}/listings`);
+      const res = await apiFetch(`/api/users/${userId}/listings`);
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -240,7 +240,7 @@ export function getDonorNameSync(donorId: number): string {
 export async function getDonorName(donorId: number): Promise<string> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/admin/users');
+      const res = await apiFetch('/api/admin/users');
       const users = await res.json();
       const user = users.find((u: User) => u.user_id === donorId);
       return user ? user.org_name || user.full_name : 'Unknown';
@@ -255,7 +255,7 @@ export async function getDonorName(donorId: number): Promise<string> {
 export async function getStats(): Promise<{ meals: number; donors: number; ngos: number; wasted: string }> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/stats');
+      const res = await apiFetch('/api/stats');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -270,7 +270,7 @@ export async function getStats(): Promise<{ meals: number; donors: number; ngos:
 export async function getCities(): Promise<string[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/cities');
+      const res = await apiFetch('/api/cities');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -281,7 +281,7 @@ export async function getCities(): Promise<string[]> {
 export async function getFoodTypes(): Promise<string[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/food-types');
+      const res = await apiFetch('/api/food-types');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -293,7 +293,7 @@ export async function getFoodTypes(): Promise<string[]> {
 export async function apiGetAllUsers(): Promise<User[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/admin/users');
+      const res = await apiFetch('/api/admin/users');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -303,7 +303,7 @@ export async function apiGetAllUsers(): Promise<User[]> {
 export async function apiToggleUserActive(userId: number): Promise<User | null> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/admin/users/${userId}/toggle-active`, { method: 'PUT' });
+      const res = await apiFetch(`/api/admin/users/${userId}/toggle-active`, { method: 'PUT' });
       if (!res.ok) return null;
       return await res.json();
     } catch { /* fallback */ }
@@ -320,7 +320,7 @@ export async function apiToggleUserActive(userId: number): Promise<User | null> 
 export async function apiApproveUser(userId: number): Promise<User | null> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/admin/users/${userId}/approve`, { method: 'PUT' });
+      const res = await apiFetch(`/api/admin/users/${userId}/approve`, { method: 'PUT' });
       if (!res.ok) return null;
       return await res.json();
     } catch { /* fallback */ }
@@ -340,7 +340,7 @@ export async function getAdminStats(): Promise<{
 }> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/admin/stats');
+      const res = await apiFetch('/api/admin/stats');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -359,7 +359,7 @@ export async function getAdminStats(): Promise<{
 export async function apiGetDonations(): Promise<Donation[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/admin/donations');
+      const res = await apiFetch('/api/admin/donations');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -382,7 +382,7 @@ export async function apiGetDonations(): Promise<Donation[]> {
 export async function apiGetPendingUsers(): Promise<User[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/admin/pending');
+      const res = await apiFetch('/api/admin/pending');
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -394,7 +394,7 @@ export async function apiGetPendingUsers(): Promise<User[]> {
 export async function apiClaimFood(foodId: number, recipientId: number): Promise<Claim | null> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch('/claims', { method: 'POST', body: JSON.stringify({ food_id: foodId, recipient_id: recipientId }) });
+      const res = await apiFetch('/api/claims', { method: 'POST', body: JSON.stringify({ food_id: foodId, recipient_id: recipientId }) });
       if (!res.ok) return null;
       return await res.json();
     } catch { /* fallback */ }
@@ -414,7 +414,7 @@ export async function apiClaimFood(foodId: number, recipientId: number): Promise
 export async function apiGetUserClaims(recipientId: number): Promise<(Claim & { food?: FoodListing; donor_name?: string })[]> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/users/${recipientId}/claims`);
+      const res = await apiFetch(`/api/users/${recipientId}/claims`);
       return await res.json();
     } catch { /* fallback */ }
   }
@@ -434,7 +434,7 @@ export async function apiGetUserClaims(recipientId: number): Promise<(Claim & { 
 export async function apiMarkClaimCollected(claimId: number): Promise<Claim | null> {
   if (await checkBackend()) {
     try {
-      const res = await apiFetch(`/claims/${claimId}/collect`, { method: 'PUT' });
+      const res = await apiFetch(`/api/claims/${claimId}/collect`, { method: 'PUT' });
       if (!res.ok) return null;
       return await res.json();
     } catch { /* fallback */ }
