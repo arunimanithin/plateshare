@@ -6,7 +6,7 @@ import { User, FoodListing, Donation, Claim } from './types';
 // falls back to localStorage if unavailable
 // ============================================
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://plateshare-vi1f.onrender.com';
 
 let backendAvailable: boolean | null = null;
 
